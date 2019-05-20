@@ -13,7 +13,7 @@
   when: "inventory_hostname == groups['integr8-docker-swarm-manager'][0] and mode == 'cluster'"
 
 - name: Copy configurations
-  copy: 
+  copy:
     src: cluster/
     dest: "{{ elasticsearch_temp_dir.path }}"
   when: "inventory_hostname == groups['integr8-docker-swarm-manager'][0] and mode == 'cluster'"
