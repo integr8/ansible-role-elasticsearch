@@ -1,0 +1,9 @@
+node.master: false
+node.data: false
+node.ingest: false
+network.host: 0.0.0.0
+action.destructive_requires_name: true
+
+discovery.seed_hosts:
+  - master-01
+  - master-02

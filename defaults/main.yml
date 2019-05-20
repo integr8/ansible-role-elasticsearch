@@ -1,0 +1,8 @@
+---
+elasticsearch_docker_image: "elasticsearch:7.0.1"
+elasticsearch_host: "elasticsearch.integr8.me"
+mode: cluster
+cluster:
+  name: "integr8"
+  master_nodes: 2
+  data_nodes: 2

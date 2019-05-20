@@ -1,0 +1,64 @@
+version: '3.7'
+
+services:
+  standalone:
+    image: "{{ elasticsearch_docker_image }}"
+    networks:
+      - integr8
+    ports:
+      - target: 9200
+        published: 9200
+        protocol: tcp
+        mode: host
+      - target: 9300
+        published: 9300
+        protocol: tcp
+        mode: host
+    environment:
+      - "TZ=America/Sao_Paulo"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    configs:
+      - source: elasticsearch_configs
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
+      - source: elasticsearch_jvm_options
+        target: /usr/share/elasticsearch/config/jvm.options
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    deploy:
+      endpoint_mode: dnsrr
+      mode: "replicated"
+      replicas: 2
+      labels:
+        - traefik.enable=true
+        - traefik.backend=standalone
+        - traefik.frontend.rule=Host:{{ elasticsearch_host }}
+        - traefik.port=9200
+        - traefik.docker.network=integr8
+        - traefik.backend.healthcheck.path=_cat/health
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 1g
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+      placement:
+        constraints:
+          - node.role == worker
+networks:
+  integr8:
+    external: true
+    name: integr8
+
+configs:
+  elasticsearch_configs:
+    file: "{{ elasticsearch_temp_dir.path }}/standalone.yml"
+  elasticsearch_jvm_options:
+    file: "{{ elasticsearch_temp_dir.path }}/standalone.options"
+
+volumes:
+  elasticsearch_data:

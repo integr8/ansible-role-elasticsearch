@@ -1,0 +1,111 @@
+version: '3.7'
+
+services:
+  ingest:
+    image: "{{ elasticsearch_docker_image }}"
+    networks:
+      - integr8
+    ports:
+      - target: 9200
+        published: 9200
+        protocol: tcp
+        mode: host
+    healthcheck:
+      test: curl -fs http://localhost:9200/_cat/health || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+    environment:
+      - "TZ=America/Sao_Paulo"
+      - node.name=ingest
+      - cluster.name="{{ cluster.name }}"
+    volumes:
+      - ingest_elasticsearch_data:/usr/share/elasticsearch/data
+    configs:
+      - source: ingest_config
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
+      - source: ingest_jvm_config
+        target: /usr/share/elasticsearch/config/jvm.options
+    deploy:
+      endpoint_mode: dnsrr
+      mode: "replicated"
+      replicas: 1
+      labels:
+        - traefik.enable=true
+        - traefik.backend=ingest
+        - traefik.frontend.rule=Host:{{ elasticsearch_host }}
+        - traefik.port=9200
+        - traefik.docker.network=integr8
+        - traefik.backend.healthcheck.path=_cat/health
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 1g
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+      placement:
+        constraints:
+          - node.role == worker
+          
+{% for i in range(1, cluster.master_nodes) %}
+  master-{{ "%02d"|format(i) }}:
+    image: "{{ elasticsearch_docker_image }}"
+    networks:
+      - integr8
+    environment:
+      - "TZ=America/Sao_Paulo"
+      - "node.name=master-{{ "%02d"|format(i) }}"
+      - "cluster.name={{ cluster.name }}"
+    healthcheck:
+      test: curl -fs http://localhost:9200/_cat/health || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+    volumes:
+      - master-{{ "%02d"|format(i) }}_elasticsearch_data:/usr/share/elasticsearch/data
+    configs:
+      - source: master_config
+        target: /usr/share/elasticsearch/config/elasticsearch.yml
+      - source: master_jvm_config
+        target: /usr/share/elasticsearch/config/jvm.options
+    deploy:
+      endpoint_mode: dnsrr
+      mode: "replicated"
+      replicas: 1
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 1g
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+      placement:
+        constraints:
+          - node.role == worker
+{% endfor %}
+
+networks:
+  integr8:
+    external: true
+    name: integr8
+
+configs:
+  ingest_config:
+    file: "{{ elasticsearch_temp_dir.path }}/ingest/elasticsearch.yml"
+  ingest_jvm_config:
+    file: "{{ elasticsearch_temp_dir.path }}/ingest/jvm.options"
+  master_config:
+    file: "{{ elasticsearch_temp_dir.path }}/master/elasticsearch.yml"
+  master_jvm_config:
+    file: "{{ elasticsearch_temp_dir.path }}/master/jvm.options"
+
+volumes:
+  ingest_elasticsearch_data:
+{% for i in range(1, cluster.master_nodes) %}
+  master-{{ "%02d"|format(i) }}_elasticsearch_data:
+{% endfor %}

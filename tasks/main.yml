@@ -1,0 +1,31 @@
+---
+- name: Create temporary directory to store related files
+  tempfile:
+    state: directory
+    suffix: elasticsearch
+  register: elasticsearch_temp_dir
+  when: "inventory_hostname == groups['integr8-docker-swarm-manager'][0]"
+
+- name: Interpolate Ansible variables
+  template:
+    src: docker-compose-cluster.yml.j2
+    dest: "{{ elasticsearch_temp_dir.path }}/docker-compose-cluster.yml"
+  when: "inventory_hostname == groups['integr8-docker-swarm-manager'][0] and mode == 'cluster'"
+
+- name: Copy configurations
+  copy: 
+    src: cluster/
+    dest: "{{ elasticsearch_temp_dir.path }}"
+  when: "inventory_hostname == groups['integr8-docker-swarm-manager'][0] and mode == 'cluster'"
+
+- name: Deploy Elasticsearch in Swarm
+  command: 'docker stack deploy --compose-file {{ elasticsearch_temp_dir.path }}/docker-compose-cluster.yml elasticsearch'
+  when: "inventory_hostname == groups['integr8-docker-swarm-manager'][0] and mode == 'cluster'"
+
+- name: Record Traefik DNS
+  ara_record:
+    key: "elasticsearch_host"
+    value: "http://{{ elasticsearch_host }}"
+    type: url
+  tags:
+    - skip_ansible_lint
