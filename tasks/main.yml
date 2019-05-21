@@ -18,6 +18,12 @@
     dest: "{{ elasticsearch_temp_dir.path }}"
   when: "inventory_hostname == groups['integr8-docker-swarm-manager'][0] and mode == 'cluster'"
 
+- name: deprovision 'elasticsearch'
+  docker_stack:
+    name: elasticsearch
+    state: absent
+  when: "inventory_hostname == groups['integr8-docker-swarm-manager'][0]"
+
 - name: Deploy Elasticsearch in Swarm
   command: 'docker stack deploy --compose-file {{ elasticsearch_temp_dir.path }}/docker-compose-cluster.yml elasticsearch'
   when: "inventory_hostname == groups['integr8-docker-swarm-manager'][0] and mode == 'cluster'"

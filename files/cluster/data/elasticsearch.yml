@@ -1,0 +1,16 @@
+cluster.name: integr8
+
+node.master: false
+node.data: true
+node.ingest: false
+node.ml: false
+
+network.host: 0.0.0.0
+transport.host: 0.0.0.0
+
+discovery.zen.minimum_master_nodes: 1
+discovery.zen.ping.unicast.hosts: master01
+discovery.zen.ping_timeout: 5s
+discovery.zen.commit_timeout: 5s
+discovery.zen.fd.ping_retries: 10
+discovery.zen.fd.ping_interval: 10s

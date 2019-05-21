@@ -1,6 +1,8 @@
 ---
-elasticsearch_docker_image: "elasticsearch:7.0.1"
+elasticsearch_docker_image: "docker.elastic.co/elasticsearch/elasticsearch:6.7.2"
+kibana_docker_image: "docker.elastic.co/elasticsearch/kibana:6.7.2"
 elasticsearch_host: "elasticsearch.integr8.me"
+kibana_host: "elasticsearch.integr8.me"
 mode: cluster
 cluster:
   name: "integr8"
